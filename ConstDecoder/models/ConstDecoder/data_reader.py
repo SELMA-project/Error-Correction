@@ -202,8 +202,8 @@ def get_examples(examples_path, tokenizer, max_src_len, max_add_len):
         tags, src = convert_tags(source, target, simple_tokenizer, debug=False)
         tags, src = further_convert_tags(src, tags, tokenizer)
 
-        src = tokenizer.convert_tokens_to_ids(src)[:max_src_len]
-        tags = tags[:max_src_len]
+        src = tokenizer.convert_tokens_to_ids(src)[: max_src_len - 2]
+        tags = tags[: max_src_len - 2]
         src = [tokenizer.cls_token_id] + src + [tokenizer.sep_token_id]
         tags = ["DELETE"] + tags + ["DELETE"]
 

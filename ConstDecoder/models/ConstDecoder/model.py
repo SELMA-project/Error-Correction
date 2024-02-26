@@ -6,10 +6,21 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT F
 PURPOSE.
 """
 
+import argparse
+
 import torch.nn.functional as F
 from data_reader import *
 from torch import nn
-from transformers import BertModel, BertTokenizer
+from transformers import AutoTokenizer, BertModel
+
+
+def str_to_bool(value):
+    if value.lower() in {"true"}:
+        return True
+    elif value.lower() in {"false"}:
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def further_convert_tags(src, tokenizer):
@@ -32,16 +43,24 @@ class TagDecoder(nn.Module):
         # encoder
         self.bert_encoder = BertModel.from_pretrained(args.base_model)
         self.tag_linear = nn.Sequential(
-            nn.Dropout(args.tag_pdrop), nn.Linear(args.tag_hidden_size, args.tag_size)
+            nn.Dropout(args.tag_pdrop),
+            nn.Linear(args.tag_hidden_size, args.tag_size),
         )
 
-        # decoder
+        # Account for different sizes of BERT models
+        DIM = args.tag_hidden_size
+        if DIM == 1024:
+            nhead = 16
+        else:
+            nhead = 12
+
         self.decoder_scale = nn.Sequential(
-            nn.Dropout(args.tag_pdrop), nn.Linear(768 * 2, 768)
+            nn.Dropout(args.tag_pdrop),
+            nn.Linear(DIM * 2, DIM),
         )
 
         decoder_layer = nn.TransformerDecoderLayer(
-            d_model=768, nhead=12, batch_first=True
+            d_model=DIM, nhead=nhead, batch_first=True
         )
         self.edit_decoder = nn.TransformerDecoder(decoder_layer, num_layers=1)
         self.decoder_proj = nn.Sequential(
@@ -50,8 +69,13 @@ class TagDecoder(nn.Module):
 
         # generate
         self.simple_tokenizer = SimpleTokenizer(" ")
-        self.bert_tokenizer = BertTokenizer.from_pretrained(
-            self.args.tokenizer_name, do_lower_case=True, do_basic_tokenize=False
+        self.bert_tokenizer = AutoTokenizer.from_pretrained(
+            args.tokenizer_name,
+            do_lower_case=True,
+            do_basic_tokenize=False,
+            add_special_tokens=False,
+            strip_accents=args.strip_accents,
+            max_length=args.max_src_len,
         )
 
     def forward(self, inputs):
@@ -169,7 +193,14 @@ class TagDecoder(nn.Module):
         src = insert_dummy(self.simple_tokenizer.tokenize(input_str))
         src = further_convert_tags(src, self.bert_tokenizer)
 
-        src = self.bert_tokenizer.convert_tokens_to_ids(src)
+        encoded_src = self.bert_tokenizer.encode(
+            self.bert_tokenizer.convert_tokens_to_string(src),
+            truncation=True,
+            max_length=self.args.max_src_len,
+            add_special_tokens=False,
+        )
+
+        src = encoded_src[: self.args.max_src_len - 2]
         src = (
             [self.bert_tokenizer.cls_token_id]
             + src

@@ -8,6 +8,7 @@ PURPOSE.
 
 import argparse
 import json
+import os
 import time
 
 from jiwer import wer
@@ -33,12 +34,19 @@ def read_data(data_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--base_model", type=str, default="", help="")
+    parser.add_argument(
+        "--strip_accents",
+        type=str_to_bool,
+        default=str_to_bool(os.getenv("STRIP_ACCENTS", "False")),
+        help="If accents should be removed",
+    )
     parser.add_argument("--device", type=str, default="", help="")
     parser.add_argument("--tag_pdrop", type=float, default=0.2, help="")
     parser.add_argument("--decoder_proj_pdrop", type=float, default=0.2, help="")
     parser.add_argument("--tag_hidden_size", type=int, default=768, help="")
     parser.add_argument("--tag_size", type=int, default=3, help="")
     parser.add_argument("--change_weight", type=float, default=3.0, help="")
+    parser.add_argument("--max_src_len", type=int, default=512, help="")
     parser.add_argument("--vocab_size", type=int, default=30522, help="")
     parser.add_argument("--pad_token_id", type=int, default=0, help="")
     parser.add_argument("--alpha", type=float, default=3.0, help="")
@@ -66,13 +74,13 @@ if __name__ == "__main__":
         end_time = time.time()
         pred_time = end_time - start_time
         preds.append(pred.strip())
-        print(f"ASR:{asr_str}")
-        print(f"PRED:{pred}")
-        print(f"GOLD:{gold}")
+        print(f"GOLD:\t\t{gold}")
+        print(f"ASR:\t\t{asr_str}")
+        print(f"Corrected:\t{pred}\n")
         sample_num += 1
 
     total_end_time = time.time()
-    print(f"avg time cost is {(total_end_time - total_start_time) / sample_num}")
+    print(f"\navg time cost is {(total_end_time - total_start_time) / sample_num}")
     print(
         "raw_wer: {}\nnew_wer: {}\n".format(
             wer(data["target"], data["source"]), wer(data["target"], preds)
