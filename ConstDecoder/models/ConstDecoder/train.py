@@ -1,19 +1,19 @@
-
-'''
+"""
 Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
 This software is licensed under the BSD 3-Clause License.
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 PURPOSE.
-'''
+"""
 
+import argparse
 import os
 import shutil
-from torch.optim import Adam
-from jiwer import wer
-import argparse
+
 from data_reader import *
+from jiwer import wer
 from model import *
+from torch.optim import Adam
 
 
 def train_epoch(model, train_data_loader, optimizer):
@@ -28,9 +28,12 @@ def train_epoch(model, train_data_loader, optimizer):
 
         loss_list.append(total_loss)
         if i % 20 == 0:  # monitoring
-            print(f"train step: {i}, tag loss is {tag_loss.item()}, gen loss is {gen_loss.item()}, total loss is {total_loss.item()}")
+            print(
+                f"train step: {i}, tag loss is {tag_loss.item()}, gen loss is {gen_loss.item()}, total loss is {total_loss.item()}"
+            )
 
     return sum(loss_list) / len(loss_list)
+
 
 def valid_epoch(model, valid_data_loader):
     model.eval()
@@ -48,9 +51,9 @@ def valid_epoch(model, valid_data_loader):
     return wer(golds, preds)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='')
-    #model
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="")
+    # model
     parser.add_argument("--base_model", type=str, default="", help="")
     parser.add_argument("--tag_pdrop", type=float, default=0.2, help="")
     parser.add_argument("--decoder_proj_pdrop", type=float, default=0.2, help="")
@@ -61,14 +64,14 @@ if __name__ == '__main__':
     parser.add_argument("--alpha", type=float, default=3.0, help="")
     parser.add_argument("--change_weight", type=float, default=1.5, help="")
 
-    #data
+    # data
     parser.add_argument("--train_data_file", type=str, default="", help="")
     parser.add_argument("--eval_data_file", type=str, default="", help="")
     parser.add_argument("--max_src_len", type=int, default=256, help="")
     parser.add_argument("--max_add_len", type=int, default=10, help="")
     parser.add_argument("--tokenizer_name", type=str, default="", help="")
 
-    #train
+    # train
     parser.add_argument("--batch_size", type=int, default=32, help="")
     parser.add_argument("--lr", type=float, default=5e-5, help="")
     parser.add_argument("--max_num_epochs", type=int, default=10, help="")
@@ -78,27 +81,39 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.device = "cuda:" + args.device
 
-    #load data
-    tokenizer = BertTokenizer.from_pretrained(args.tokenizer_name, \
-                                              do_lower_case=True, do_basic_tokenize=False)
-    train_examples = get_examples(examples_path=args.train_data_file,
-                                  tokenizer=tokenizer,
-                                  max_src_len=args.max_src_len,
-                                  max_add_len=args.max_add_len,
-                                  )
-    eval_examples = get_examples(examples_path=args.eval_data_file,
-                                 tokenizer=tokenizer,
-                                 max_src_len=args.max_src_len,
-                                 max_add_len=args.max_add_len,
-                                 )
+    # load data
+    tokenizer = BertTokenizer.from_pretrained(
+        args.tokenizer_name, do_lower_case=True, do_basic_tokenize=False
+    )
+    train_examples = get_examples(
+        examples_path=args.train_data_file,
+        tokenizer=tokenizer,
+        max_src_len=args.max_src_len,
+        max_add_len=args.max_add_len,
+    )
+    eval_examples = get_examples(
+        examples_path=args.eval_data_file,
+        tokenizer=tokenizer,
+        max_src_len=args.max_src_len,
+        max_add_len=args.max_add_len,
+    )
 
     train_dataset = ExampleDataset(train_examples)
     valid_dataset = ExampleDataset(eval_examples)
-    train_data_loader = DataLoader(train_dataset, collate_fn=collate_batch, batch_size=args.batch_size, shuffle=True)
-    valid_data_loader = DataLoader(valid_dataset, collate_fn=collate_batch, batch_size=args.batch_size, shuffle=True)
+    train_data_loader = DataLoader(
+        train_dataset,
+        collate_fn=collate_batch,
+        batch_size=args.batch_size,
+        shuffle=True,
+    )
+    valid_data_loader = DataLoader(
+        valid_dataset,
+        collate_fn=collate_batch,
+        batch_size=args.batch_size,
+        shuffle=True,
+    )
 
-
-    #define model, loss_fn, optimizer
+    # define model, loss_fn, optimizer
     model = TagDecoder(args)
     model = model.to(args.device)
 
@@ -119,7 +134,7 @@ if __name__ == '__main__':
         print(f"eval {epoch} wer is {avg_val_loss}")
         eval_loss_list.append((epoch, avg_val_loss))
 
-    eval_loss_list.sort(key=lambda x:x[-1])
+    eval_loss_list.sort(key=lambda x: x[-1])
     print(eval_loss_list)
     best_epoch_path = os.path.join(args.save_dir, str(eval_loss_list[0][0]) + ".pt")
     print(f"best epoch path is {best_epoch_path}")

@@ -1,19 +1,19 @@
-
-'''
+"""
 Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
 This software is licensed under the BSD 3-Clause License.
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 PURPOSE.
-'''
+"""
 
+import csv
+import json
 import os
 from collections import defaultdict
-import json
-import csv
+
 
 def read_csv_data(file_path):
-    with open(file_path, newline='') as f:
+    with open(file_path, newline="") as f:
         reader = csv.reader(f)
         data = list(reader)
 
@@ -29,7 +29,8 @@ def read_csv_data(file_path):
 
     return raw_data, asr_data
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     base_dir = "./snips_tts_asr/"
     output_dir = "SNIPS"
     if not os.path.exists(output_dir):

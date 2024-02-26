@@ -1,17 +1,18 @@
-
-'''
+"""
 Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
 This software is licensed under the BSD 3-Clause License.
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 PURPOSE.
-'''
+"""
 
 import argparse
-import time
 import json
+import time
+
 from jiwer import wer
 from model import *
+
 
 def read_data(data_path):
     with open(data_path) as rfile:
@@ -28,8 +29,9 @@ def read_data(data_path):
     new_data["target"] = tgt
     return new_data
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='')
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="")
     parser.add_argument("--base_model", type=str, default="", help="")
     parser.add_argument("--device", type=str, default="", help="")
     parser.add_argument("--tag_pdrop", type=float, default=0.2, help="")
@@ -47,13 +49,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
     args.device = "cuda:" + args.device
 
-    #define model
+    # define model
     model = TagDecoder(args)
     model.load_state_dict(torch.load(args.model_path, map_location=args.device))
     model = model.to(args.device)
     model.eval()
 
-    #read data
+    # read data
     data = read_data(args.test_data_path)
     total_start_time = time.time()
     sample_num = 0
@@ -62,7 +64,7 @@ if __name__ == '__main__':
         start_time = time.time()
         pred = model.generate(asr_str)
         end_time = time.time()
-        pred_time = (end_time - start_time)
+        pred_time = end_time - start_time
         preds.append(pred.strip())
         print(f"ASR:{asr_str}")
         print(f"PRED:{pred}")
@@ -71,4 +73,8 @@ if __name__ == '__main__':
 
     total_end_time = time.time()
     print(f"avg time cost is {(total_end_time - total_start_time) / sample_num}")
-    print("raw_wer: {}\nnew_wer: {}\n".format(wer(data["target"], data["source"]), wer(data["target"], preds)))
+    print(
+        "raw_wer: {}\nnew_wer: {}\n".format(
+            wer(data["target"], data["source"]), wer(data["target"], preds)
+        )
+    )

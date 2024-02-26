@@ -1,35 +1,29 @@
+# This data reader are modified from the following two files:
+# https://github.com/NetEase-GameAI/SARG/blob/master/run_train.py
+# https://github.com/NetEase-GameAI/SARG/blob/master/data_utils.py
 
-#This data reader are modified from the following two files:
-#https://github.com/NetEase-GameAI/SARG/blob/master/run_train.py
-#https://github.com/NetEase-GameAI/SARG/blob/master/data_utils.py
-
-import json
 import copy
+import json
 
 import torch
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
-TAGS = {
-    "DELETE": 0,
-    "KEEP": 1,
-    "CHANGE": 2
-}
+TAGS = {"DELETE": 0, "KEEP": 1, "CHANGE": 2}
 
 
 def _compute_lcs(source, target):
     """Computes the Longest Common Subsequence (LCS).
 
-  Description of the dynamic programming algorithm:
-  https://www.algorithmist.com/index.php/Longest_Common_Subsequence
+    Description of the dynamic programming algorithm:
+    https://www.algorithmist.com/index.php/Longest_Common_Subsequence
 
-  Args:
-    source: List of source tokens.
-    target: List of target tokens.
+    Args:
+      source: List of source tokens.
+      target: List of target tokens.
 
-  Returns:
-    List of tokens in the LCS.
-  """
+    Returns:
+      List of tokens in the LCS.
+    """
     table = _lcs_table(source, target)
     return _backtrack(table, source, target, len(source), len(target))
 
@@ -51,16 +45,16 @@ def _lcs_table(source, target):
 def _backtrack(table, source, target, i, j):
     """Backtracks the Longest Common Subsequence table to reconstruct the LCS.
 
-  Args:
-    table: Precomputed LCS table.
-    source: List of source tokens.
-    target: List of target tokens.
-    i: Current row index.
-    j: Current column index.
+    Args:
+      table: Precomputed LCS table.
+      source: List of source tokens.
+      target: List of target tokens.
+      i: Current row index.
+      j: Current column index.
 
-  Returns:
-    List of tokens corresponding to LCS.
-  """
+    Returns:
+      List of tokens corresponding to LCS.
+    """
     if i == 0 or j == 0:
         return []
     if source[i - 1] == target[j - 1]:
@@ -72,7 +66,7 @@ def _backtrack(table, source, target, i, j):
         return _backtrack(table, source, target, i - 1, j)
 
 
-def insert_dummy(tokens, p='[unused%d]'):
+def insert_dummy(tokens, p="[unused%d]"):
     rlt = []
     cnt = 1
     for token in tokens:
@@ -82,6 +76,7 @@ def insert_dummy(tokens, p='[unused%d]'):
     rlt.append(p % cnt)
     return rlt
 
+
 def convert_tokens_to_string(tokenizer, tokens):
     return tokenizer.convert_tokens_to_string(tokens)
 
@@ -89,12 +84,12 @@ def convert_tokens_to_string(tokenizer, tokens):
 def _decode_valid_tags(source, tags, tokenizer):
     string = []
     for token, tag in zip(source, tags):
-        if tag == 'DELETE':
+        if tag == "DELETE":
             continue
-        elif tag == 'KEEP':
+        elif tag == "KEEP":
             string.append(token)
         else:
-            string.append(tag.split('|')[-1])
+            string.append(tag.split("|")[-1])
     return convert_tokens_to_string(tokenizer, string)
 
 
@@ -104,16 +99,16 @@ def convert_tags(source, target, tokenizer, debug=False):
     target = tokenizer.tokenize(target)
 
     # initialize tags
-    tags = ['DELETE'] * len(source)
+    tags = ["DELETE"] * len(source)
 
-    kept_tokens = _compute_lcs(source, target) + ['[DUMMY]']
+    kept_tokens = _compute_lcs(source, target) + ["[DUMMY]"]
 
     target_idx = 0
     phrase = []
 
     for source_idx in range(len(source)):
         if source[source_idx] == kept_tokens[0]:
-            tags[source_idx] = 'KEEP'
+            tags[source_idx] = "KEEP"
             while target_idx < len(target) and target[target_idx] != kept_tokens[0]:
                 phrase.append(target[target_idx])
                 target_idx += 1
@@ -122,22 +117,30 @@ def convert_tags(source, target, tokenizer, debug=False):
 
             if len(phrase) > 0:
                 if debug:
-                    tags[source_idx - 1] = 'CHANGE|' + convert_tokens_to_string(tokenizer, phrase)
+                    tags[source_idx - 1] = "CHANGE|" + convert_tokens_to_string(
+                        tokenizer, phrase
+                    )
                 else:
-                    tags[source_idx - 1] = 'CHANGE|' + '<|>'.join(phrase)
+                    tags[source_idx - 1] = "CHANGE|" + "<|>".join(phrase)
                 phrase = []
 
             target_idx += 1
 
     if target_idx < len(target):
         if debug:
-            tags[-1] = 'CHANGE|' + convert_tokens_to_string(tokenizer, target[target_idx:])
+            tags[-1] = "CHANGE|" + convert_tokens_to_string(
+                tokenizer, target[target_idx:]
+            )
         else:
-            tags[-1] = 'CHANGE|' + "<|>".join(target[target_idx:])
+            tags[-1] = "CHANGE|" + "<|>".join(target[target_idx:])
 
-    if debug and _decode_valid_tags(source, tags, tokenizer) != convert_tokens_to_string(tokenizer, target):
-        print(f"decoded: {_decode_valid_tags(source, tags, tokenizer)} "
-              f"original: {convert_tokens_to_string(tokenizer, target)}")
+    if debug and _decode_valid_tags(
+        source, tags, tokenizer
+    ) != convert_tokens_to_string(tokenizer, target):
+        print(
+            f"decoded: {_decode_valid_tags(source, tags, tokenizer)} "
+            f"original: {convert_tokens_to_string(tokenizer, target)}"
+        )
     return tags, source
 
 
@@ -145,10 +148,8 @@ class SimpleTokenizer:
     def __init__(self, separator):
         self.separator = separator
 
-
     def tokenize(self, text):
         return text.strip().split(self.separator)
-
 
     def convert_tokens_to_string(self, tokens):
         return " ".join(tokens)
@@ -163,7 +164,7 @@ def further_convert_tags(src, tags, tokenizer):
             wordpiece_token_lst.append(tmp_token_lst[0])
             if "CHANGE" in label_item:
                 temp_label = label_item.replace("CHANGE|", "").replace("<|>", " ")
-                label_item = 'CHANGE|' + "<|>".join(tokenizer.tokenize(temp_label))
+                label_item = "CHANGE|" + "<|>".join(tokenizer.tokenize(temp_label))
             wordpiece_label_lst.append(label_item)
         else:
             len_wordpiece = len(tmp_token_lst)
@@ -173,8 +174,9 @@ def further_convert_tags(src, tags, tokenizer):
 
     return wordpiece_label_lst, wordpiece_token_lst
 
+
 def data_iter(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
         for sample in data.values():
             source = sample["ASR"]
@@ -192,9 +194,8 @@ def get_examples(examples_path, tokenizer, max_src_len, max_add_len):
         "src_pos": [],
         "target": [],
         "RAW": [],
-        "ASR": []
+        "ASR": [],
     }
-
 
     for source, target in data_iter(examples_path):
         ASR, RAW = copy.deepcopy(source), copy.deepcopy(target)
@@ -212,8 +213,8 @@ def get_examples(examples_path, tokenizer, max_src_len, max_add_len):
         target = [[] for _ in range(len(src))]
         for idx in range(len(src)):
             if tags[idx].startswith("CHANGE|"):
-                add = ["[CLS]"] + tags[idx][len("CHANGE|"):].split("<|>")
-                add = tokenizer.convert_tokens_to_ids(add)[:max_add_len-1] + [102]
+                add = ["[CLS]"] + tags[idx][len("CHANGE|") :].split("<|>")
+                add = tokenizer.convert_tokens_to_ids(add)[: max_add_len - 1] + [102]
                 target[idx].extend([TAGS["CHANGE"]] + add)
             else:
                 target[idx].append(TAGS[tags[idx]])
@@ -258,15 +259,26 @@ def collate_batch(batch_dict_examples):
             add_max_len = max(add_max_len, len(t))
 
     for dict_example in batch_dict_examples:
-        src_token.append(dict_example["src_token"] + [0] * (src_max_len - len(dict_example["src_token"])))
-        src_mask.append(dict_example["src_mask"] + [0] * (src_max_len - len(dict_example["src_token"])))
-        src_pos.append(dict_example["src_pos"] + [p for p in range(len(dict_example["src_pos"]), src_max_len)])
+        src_token.append(
+            dict_example["src_token"]
+            + [0] * (src_max_len - len(dict_example["src_token"]))
+        )
+        src_mask.append(
+            dict_example["src_mask"]
+            + [0] * (src_max_len - len(dict_example["src_token"]))
+        )
+        src_pos.append(
+            dict_example["src_pos"]
+            + [p for p in range(len(dict_example["src_pos"]), src_max_len)]
+        )
 
         _tgt = []
         for t in dict_example["target"]:
             _tgt.append(t + [0] * (add_max_len - len(t)))
 
-        target.append(_tgt + [[0] * add_max_len] * (src_max_len - len(dict_example["src_token"])))
+        target.append(
+            _tgt + [[0] * add_max_len] * (src_max_len - len(dict_example["src_token"]))
+        )
 
     inputs["src_token"] = torch.tensor(src_token, dtype=torch.long)
     inputs["src_mask"] = torch.tensor(src_mask, dtype=torch.long)

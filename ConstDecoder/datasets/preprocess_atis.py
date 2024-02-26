@@ -1,21 +1,21 @@
-
-'''
+"""
 Copyright (c) Huawei Technologies Co., Ltd. 2022. All rights reserved.
 This software is licensed under the BSD 3-Clause License.
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 PURPOSE.
-'''
+"""
 
+import json
 import os
 import zipfile
 from collections import defaultdict
-import json
 
 
 def unzip_zip(from_path, to_path):
-    with zipfile.ZipFile(from_path, 'r') as zip_ref:
+    with zipfile.ZipFile(from_path, "r") as zip_ref:
         zip_ref.extractall(to_path)
+
 
 def read_file(file_path):
     data = []
@@ -25,7 +25,8 @@ def read_file(file_path):
 
     return data
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unzip_zip("atis.zip", "atis")
 
     base_dir = "./atis/atis/"
