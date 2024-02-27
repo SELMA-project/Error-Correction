@@ -41,7 +41,7 @@ nohup python -u ../eval.py \
     --base_model $PRETRAINED_MODEL \
     --tokenizer_name $PRETRAINED_MODEL \
     --strip_accents $STRIP_ACCENTS \
-    --model_path ./models.${YOUR_DATASET}/1.pt \
+    --model_path ./models.${YOUR_DATASET}/best.pt \
     --test_data_path ../../../datasets/${YOUR_DATASET}/test.json \
     --device 0 \
     --tag_pdrop 0.2 \
