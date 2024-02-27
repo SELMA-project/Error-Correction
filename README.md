@@ -5,6 +5,12 @@ This repository contains prototypical work on error correction. The first approa
 [Original ConstDecoder repo](https://github.com/yangjingyuan/ConstDecoder/tree/main)
 
 [Paper](https://arxiv.org/pdf/2208.04641.pdf)
+### Setup
+```
+conda create -n constdecoder python==3.10.12
+conda activate constdecoder
+pip install -r requirements.txt
+```
 ### Data Preparation
 In order to be able to train / test the performance of the ConstDecoder, you need to create your datasets in the following format:
 
