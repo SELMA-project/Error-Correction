@@ -1,4 +1,4 @@
-NEMO_PATH=NeMo
+NEMO_COMPATIBLE_PATH=.
 
 ALIGNMENT_DIR=align
 ## path to GIZA++ and mkcls binaries

@@ -1,8 +1,8 @@
-NEMO_COMPATIBLE_PATH=nemo_compatible
+NEMO_COMPATIBLE_PATH=.
 
 git clone https://huggingface.co/datasets/bene-ges/en_gtn_vocab
 
-## Wikipedia titles taken from YAGO corpus. Preparation of this file is described in preprocess_yago.sh.
+## Wikipedia titles taken from entities corpus. Preparation of this file is described in preprocess_yago.sh.
 ## Format: original title, and clean
 ##    Żywkowo,_Podlaskie_Voivodeship         zywkowo_podlaskie_voivodeship
 ##    Żywkowo,_Warmian-Masurian_Voivodeship  zywkowo_warmian-masurian_voivodeship
@@ -10,20 +10,20 @@ git clone https://huggingface.co/datasets/bene-ges/en_gtn_vocab
 ##    ZYX                                    zyx
 ##    Zyx_(cartoonist)                       zyx_cartoonist
 ##    ZyX_(company)                          zyx_company
-YAGO_ENTITIES=yago.uniq2
+ENTITIES=entities.uniq2
 
 ## Preparation of this folder is described in preprocess_yago.sh. Its structure looks like this
 ##  ├── part_xaa.tar.gz
 ##  ├── ...
 ##  └── part_xeс.tar.gz
 ## Names do not matter, each tar.gz contains multiple downloaded articles, each in a separate json file 
-WIKIPEDIA_FOLDER=../yago_wikipedia
+WIKIPEDIA_FOLDER=./entities_wikipedia
 
 ## Articles with these titles will be skipped (as they are reserved for testing)
 ## To generate this file use ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/evaluation/get_all_titles_from_spoken_wikipedia.py --input_folder en/en/english --output_file spoken_wiki_titles.txt
 EXCLUDE_TITLES=${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/spoken_wiki_titles.txt
 
-## Vocabulary of aligned YAGO subphrases, allows to use not only Wikipedia titles as whole phrases, but also their parts.
+## Vocabulary of aligned entities subphrases, allows to use not only Wikipedia titles as whole phrases, but also their parts.
 ## Preparation of this file is described in get_ngram_mappings.sh.
 SUBMISSPELLS=sub_misspells.txt
 
@@ -57,11 +57,11 @@ GTN_REFERENCE_VOCAB=en_gtn_vocab/en_gtn_vocab.txt
 python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/get_idf_from_yago_wiki.py \
   --input_folder ${WIKIPEDIA_FOLDER} \
   --exclude_titles_file ${EXCLUDE_TITLES} \
-  --yago_entities_file ${YAGO_ENTITIES} \
+  --yago_entities_file ${ENTITIES} \
   --output_file idf.txt
 
-## Find Yago entities and its subphrases in full text paragraphs of Wikipedia articles.
-## Generates a large file yago_wiki.txt of format: list of words/phrases that occured in given paragraph, paragraph text (original case, not normalized).
+## Find entities and its subphrases in full text paragraphs of Wikipedia articles.
+## Generates a large file entities_wiki.txt of format: list of words/phrases that occured in given paragraph, paragraph text (original case, not normalized).
 ## boardman        Boardman, Samuel Lane (1903). The Naturalist of the Saint Croix. Memoir of George A. Boardman. Bangor: Privately printed.
 ## gelclair;undiluted      Gelclair is usually used 3 times a day or as needed. It is usually diluted with water and rinsed around the mouth. It can be used undiluted where no water is available, and applied directly.
 ## gelclair;painkillers;mucositis       Gelclair does not numb the mouth and can be used in conjunction with other treatment options for managing oral mucositis, including antibacterial mouthwashes and painkillers.
@@ -69,25 +69,25 @@ python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/ge
 python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/prepare_sentences_from_yago_wiki.py \
   --input_folder ${WIKIPEDIA_FOLDER} \
   --exclude_titles_file ${EXCLUDE_TITLES} \
-  --yago_entities_file ${YAGO_ENTITIES} \
+  --yago_entities_file ${ENTITIES} \
   --sub_misspells_file ${SUBMISSPELLS} \
   --idf_file idf.txt \
-  --output_file yago_wiki.txt
+  --output_file entities_wiki.txt
 
-## Take a sample from 10 Gb yago_wiki.txt file.
+## Take a sample from entities_wiki.txt file.
 ## Sampling is controlled by parameters --each_n_line (skip other) and --max_count (skips paragraph if all its phrases already occured at least as many times)
 ## Phrase lists and paragraphs are written to separate files with equal number of lines 
 python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/sample_phrases.py \
-  --input_name yago_wiki.txt \
+  --input_name entities_wiki.txt \
   --max_count 10 \
   --each_n_line 30 \
-  --output_phrases_name yago_wiki_sample.phrases \
-  --output_paragraphs_name yago_wiki_sample.paragraphs
+  --output_phrases_name entities_wiki_sample.phrases \
+  --output_paragraphs_name entities_wiki_sample.paragraphs
 
 ## Normalize paragraphs using substitution by GTN vocabulary (fast and simple).
 python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/normalize_by_gtn_vocab.py \
-  --input_file yago_wiki_sample.paragraphs \
-  --output_file yago_wiki_sample.paragraphs.norm \
+  --input_file entities_wiki_sample.paragraphs \
+  --output_file entities_wiki_sample.paragraphs.norm \
   --tn_vocab ${GTN_REFERENCE_VOCAB}
 
 
@@ -133,14 +133,14 @@ cat related_phrases.*.txt > related_phrases.txt
 ## Collect frequent word n-grams from plain text of paragraphs. They will be later compared to target phrases to sample false positive candidates.  
 ## Output is split into 5 files - each for different n-gram length.
 python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/get_ngrams_from_yago_wiki.py \
-  --input_file yago_wiki_sample.paragraphs.norm \
+  --input_file entities_wiki_sample.paragraphs.norm \
   --output_file frequent_ngrams \
   --min_freq 50 \
   --max_ngram_len 5
 
 ## Get list of all target phrases with their frequencies (counts one occurrence per paragraph).
 python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/get_actual_phrases.py \
-  --input_file yago_wiki_sample.phrases \
+  --input_file entities_wiki_sample.phrases \
   --output_file actual_phrases.txt
 
 for part in "1" "2" "3" "4" "5"
@@ -157,10 +157,10 @@ do
 
     python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/get_candidates.py \
       --index_file index.txt.0 \
-      --input_file actual_phrases.txt \ 
-      --output_file candidates.${part}.txt \ 
+      --input_file actual_phrases.txt \
+      --output_file candidates.${part}.txt \
       --max_candidates 10 \
-      --min_real_coverage 0.8 \ 
+      --min_real_coverage 0.8 \
       --match_whole_input=true \
       --skip_empty=true \
       --skip_same=true
@@ -169,7 +169,7 @@ done
 cat candidates.*.txt > reverse_frequent_ngrams_candidates.txt
 
 ## The file reverse_frequent_ngrams_candidates.txt is later used to sample false positives.
-## Format: Yago phrase or subphrase, list of frequent n-grams somewhat similar to it
+## Format: entities phrase or subphrase, list of frequent n-grams somewhat similar to it
 ## issn    noises;cessna;meissen;issuing;hussein;giessen;poisson
 ## brussels        bruxelles;brasileira;brasileiro;russell's;roosevelt's;rescheduled;seuil;tallahassee;rousseau
 ## julia   giulio;juliet;giulia;yulia;julie;julien;julian;julio
@@ -181,8 +181,8 @@ cat candidates.*.txt > reverse_frequent_ngrams_candidates.txt
 ## Search phrases in the paragraph, cut spans containing some phrase(s) and some surrounding context.
 ## Two outputs: 1) examples with at least 1 correct candidate, 2) examples with no correct candidates.
 python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/get_fragments_from_yago_wiki.py \
-  --input_phrases_file yago_wiki_sample.phrases \
-  --input_paragraphs_file yago_wiki_sample.paragraphs.norm \
+  --input_phrases_file entities_wiki_sample.phrases \
+  --input_paragraphs_file entities_wiki_sample.paragraphs.norm \
   --output_file_non_empty fragments_non_empty.txt \
   --output_file_empty fragments_empty.txt
 

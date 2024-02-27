@@ -1,7 +1,7 @@
 NEMO_PATH=NeMo
-NEMO_COMPATIBLE_PATH=nemo_compatible
+NEMO_COMPATIBLE_PATH=.
 
-## tts_input.txt is just all entries from Yago corpus passed through a G2P model.
+## tts_input.txt is just all entries from your entities corpus passed through a G2P model.
 ## It should have the following format (space is also a phoneme)
 ## aadityana       AA0,AA2,D,AH0,T,Y,AE1,N,AH0
 ## aadivaram aadavallaku selavu    AA2,D,IH1,V,ER0,AE2,M, ,AA2,AA0,D,AH0,V,AA1,L,AA1,K,UW2, ,S,EH1,L,AH0,V,UW0

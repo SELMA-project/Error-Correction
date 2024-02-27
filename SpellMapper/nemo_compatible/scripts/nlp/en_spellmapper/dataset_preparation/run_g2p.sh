@@ -3,7 +3,7 @@
 ## git clone https://github.com/NVIDIA/NeMo NeMo
 NEMO_PATH=NeMo
 ## git clone https://github.com/bene-ges/nemo_compatible nemo_compatible
-NEMO_COMPATIBLE_PATH=nemo_compatible
+NEMO_COMPATIBLE_PATH=.
 
 git clone https://huggingface.co/bene-ges/en_g2p_cmu_bert_large
 
@@ -12,13 +12,13 @@ PRETRAINED_MODEL=en_g2p_cmu_bert_large/en_g2p.nemo
 ## here we reuse inference script from normalization_as_tagging, because this is the same model
 python ${NEMO_PATH}/examples/nlp/text_normalization_as_tagging/normalization_as_tagging_infer.py \
   pretrained_model=${PRETRAINED_MODEL} \
-  inference.from_file=yago.vocab.txt \
-  inference.out_file=yago.vocab.to_cmu.output \
+  inference.from_file=entities.vocab.txt \
+  inference.out_file=entities.vocab.to_cmu.output \
   model.max_sequence_len=128 \
   inference.batch_size=256 \
   lang=en
 
-python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/prepare_input_for_tts.py --yago_input_name yago.uniq2 --phonematic_name yago.vocab.to_cmu.output --output_name tts_input.txt
+python ${NEMO_COMPATIBLE_PATH}/scripts/nlp/en_spellmapper/dataset_preparation/prepare_input_for_tts.py --yago_input_name entities.uniq2 --phonematic_name entities.vocab.to_cmu.output --output_name tts_input.txt
 
 ## tts_input.txt should have the following format (space is also a phoneme)
 ## aadityana       AA0,AA2,D,AH0,T,Y,AE1,N,AH0
